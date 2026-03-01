@@ -41,6 +41,11 @@ This project is a CLI-based simulation of an Operating System's core components:
    ```
 3. Follow the menu prompts to creating processes, schedule them, or manage resources/deadlocks.
 
+## Demo Mode
+To simplify presentations, the system includes a Demo Mode option (Option 13) in the main menu. 
+- **What it does**: It auto-loads a predefined set of processes and resource configurations.
+- **Usefulness**: This allows for quick setup and is highly useful for academic presentation or rapid testing without manually typing inputs.
+
 ## OS Concepts Demonstrated
 - **Context Switching**: Simulated by saving/loading process states in Scheduler.
 - **Queuing**: Ready Queue (Scheduler) and Waiting Queue (Resource Manager).

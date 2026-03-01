@@ -23,6 +23,7 @@ def main_menu():
     print("10. Run Deadlock Avoidance Check")
     print("11. Run Deadlock Recovery")
     print("12. Exit")
+    print("13. Load Demo Data")
     print("-----------------")
 
 def get_valid_int(prompt):
@@ -35,6 +36,37 @@ def get_valid_int(prompt):
             return val
         except ValueError:
             print("Invalid input. Please enter an integer.")
+
+# --- Demo Mode Feature ---
+def reset_system(pm, rm):
+    """Resets system state for demo mode."""
+    pm.processes.clear()
+    rm.resources.clear()
+    rm.available.clear()
+    rm.allocation.clear()
+    rm.request.clear()
+
+def load_demo_data(pm, rm):
+    """Loads predefined dataset for presentation purposes."""
+    print("\n--- Loading Demo Data ---")
+    reset_system(pm, rm)
+    
+    # Automatically create processes
+    pm.create_process("p1", 5, 2, 0)
+    pm.create_process("p2", 3, 1, 2)
+    pm.create_process("p3", 4, 3, 4)
+    
+    # Configure resources
+    rm.initialize_resources({"R1": 5, "R2": 3})
+    
+    # Set Max Need
+    rm.set_max_need("p1", {"R1": 3, "R2": 2})
+    rm.set_max_need("p2", {"R1": 2, "R2": 1})
+    rm.set_max_need("p3", {"R1": 4, "R2": 1})
+    
+    print("Demo data loaded successfully.")
+# -------------------------
+
 
 def main():
     pm = ProcessManager()
@@ -151,6 +183,9 @@ def main():
         elif choice == '12':
             print("Exiting system. Goodbye!")
             sys.exit()
+
+        elif choice == '13':
+            load_demo_data(pm, rm)
             
         else:
             print("Invalid option. Please try again.")
