@@ -42,9 +42,15 @@ This project is a CLI-based simulation of an Operating System's core components:
 3. Follow the menu prompts to creating processes, schedule them, or manage resources/deadlocks.
 
 ## Demo Mode
-To simplify presentations, the system includes a Demo Mode option (Option 13) in the main menu. 
-- **What it does**: It auto-loads a predefined set of processes and resource configurations.
+To simplify presentations, the system includes a Demo Mode option (Option 12) in the main menu. 
+- **What it does**: Demo Mode automatically loads four predefined processes, resources, and Banker's algorithm requirements designed to clearly demonstrate scheduling behaviour and deadlock concepts.
 - **Usefulness**: This allows for quick setup and is highly useful for academic presentation or rapid testing without manually typing inputs.
+
+The dataset supports demonstration of:
+- FCFS
+- Priority Scheduling
+- Round Robin
+- Deadlock scenarios
 
 ## OS Concepts Demonstrated
 - **Context Switching**: Simulated by saving/loading process states in Scheduler.

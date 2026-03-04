@@ -14,10 +14,25 @@ class Scheduler:
             p.remaining_time = p.burst_time
             p.state = "Ready"
 
-    def print_schedule_result(self, processes, execution_order):
+    def print_schedule_result(self, processes, execution_order, gantt_data=None):
         """Prints the scheduling results: Execution Order, Waiting Time, Turnaround Time."""
         print("\nExecution Order:")
         print(" -> ".join(execution_order))
+
+        if gantt_data:
+            print("\nGantt Chart")
+            top_row = "|"
+            for item in gantt_data:
+                pid = item[0]
+                top_row += f" {pid} |"
+            print(top_row)
+            
+            bottom_row = str(gantt_data[0][1])
+            for item in gantt_data:
+                pid, start, end = item
+                width = len(f" {pid} |")
+                bottom_row += str(end).rjust(width)
+            print(bottom_row)
         
         print("\nProcess Metrics:")
         print(f"{'PID':<10} {'Burst':<10} {'Arrival':<10} {'Priority':<10} {'Finish':<10} {'Turnaround':<12} {'Waiting':<10}")
@@ -54,22 +69,27 @@ class Scheduler:
         
         current_time = 0
         execution_order = []
+        gantt_data = []
         
         for p in processes:
             if current_time < p.arrival_time:
+                gantt_data.append(("IDLE", current_time, p.arrival_time))
                 current_time = p.arrival_time
             
             p.state = "Running"
             execution_order.append(p.pid)
+            start_time = current_time
             
             # Non-preemptive, runs to completion
             current_time += p.burst_time
+            gantt_data.append((p.pid, start_time, current_time))
+            
             p.completion_time = current_time
             p.turnaround_time = p.completion_time - p.arrival_time
             p.waiting_time = p.turnaround_time - p.burst_time
             p.state = "Terminated"
             
-        self.print_schedule_result(processes, execution_order)
+        self.print_schedule_result(processes, execution_order, gantt_data)
 
     def run_priority(self):
         # Non-preemptive Priority
@@ -90,6 +110,7 @@ class Scheduler:
         n = len(processes)
         current_time = 0
         execution_order = []
+        gantt_data = []
         
         # We need to keep track of completed processes to avoid re-running them
         # Using a set of PIDs is safer
@@ -106,6 +127,7 @@ class Scheduler:
                 if pending:
                     # Jump to the earliest arrival time among pending
                     next_arrival = min(p.arrival_time for p in pending)
+                    gantt_data.append(("IDLE", current_time, next_arrival))
                     current_time = next_arrival
                     continue
                 else:
@@ -119,8 +141,11 @@ class Scheduler:
             
             p.state = "Running"
             execution_order.append(p.pid)
+            start_time = current_time
             
             current_time += p.burst_time
+            gantt_data.append((p.pid, start_time, current_time))
+            
             p.completion_time = current_time
             p.turnaround_time = p.completion_time - p.arrival_time
             p.waiting_time = p.turnaround_time - p.burst_time
@@ -129,7 +154,7 @@ class Scheduler:
             completed_pids.add(p.pid)
             completed += 1
             
-        self.print_schedule_result(processes, execution_order)
+        self.print_schedule_result(processes, execution_order, gantt_data)
 
     def run_round_robin(self, quantum):
         print(f"\n--- Running Round Robin Scheduling (Quantum={quantum}) ---")
@@ -147,6 +172,7 @@ class Scheduler:
         queue = []
         current_time = 0
         execution_order = []
+        gantt_data = []
         
         # Helper to track which processes are already in queue or completed
         # Actually in RR, we just pop from queue and push back if not done.
@@ -167,6 +193,7 @@ class Scheduler:
         
         # Add first process(es)
         if processes[0].arrival_time > 0:
+            gantt_data.append(("IDLE", current_time, processes[0].arrival_time))
             current_time = processes[0].arrival_time
             
         while added_count < n and processes[added_count].arrival_time <= current_time:
@@ -177,6 +204,7 @@ class Scheduler:
             if not queue:
                 # Jump to next arrival
                 if added_count < n:
+                    gantt_data.append(("IDLE", current_time, processes[added_count].arrival_time))
                     current_time = processes[added_count].arrival_time
                     while added_count < n and processes[added_count].arrival_time <= current_time:
                         queue.append(processes[added_count])
@@ -189,8 +217,11 @@ class Scheduler:
             execute_time = min(quantum, p.remaining_time)
             p.state = "Running"
             execution_order.append(p.pid)
+            start_time = current_time
             
             current_time += execute_time
+            gantt_data.append((p.pid, start_time, current_time))
+            
             p.remaining_time -= execute_time
             
             # Check for new arrivals during this time slice
@@ -208,4 +239,4 @@ class Scheduler:
                 p.waiting_time = p.turnaround_time - p.burst_time
                 completed += 1
                 
-        self.print_schedule_result(processes, execution_order)
+        self.print_schedule_result(processes, execution_order, gantt_data)

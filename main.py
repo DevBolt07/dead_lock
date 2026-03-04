@@ -22,8 +22,8 @@ def main_menu():
     print("9. Run Deadlock Detection")
     print("10. Run Deadlock Avoidance Check")
     print("11. Run Deadlock Recovery")
-    print("12. Exit")
-    print("13. Load Demo Data")
+    print("12. Load Demo Data")
+    print("13. Exit")
     print("-----------------")
 
 def get_valid_int(prompt):
@@ -51,18 +51,23 @@ def load_demo_data(pm, rm):
     print("\n--- Loading Demo Data ---")
     reset_system(pm, rm)
     
+    print("Creating processes...")
     # Automatically create processes
-    pm.create_process("p1", 5, 2, 0)
-    pm.create_process("p2", 3, 1, 2)
-    pm.create_process("p3", 4, 3, 4)
+    pm.create_process("p1", 8, 3, 0)
+    pm.create_process("p2", 4, 1, 1)
+    pm.create_process("p3", 6, 2, 2)
+    pm.create_process("p4", 3, 4, 3)
     
+    print("Configuring resources...")
     # Configure resources
-    rm.initialize_resources({"R1": 5, "R2": 3})
+    rm.initialize_resources({"R1": 6, "R2": 4})
     
+    print("Setting max need for Banker's algorithm...")
     # Set Max Need
     rm.set_max_need("p1", {"R1": 3, "R2": 2})
     rm.set_max_need("p2", {"R1": 2, "R2": 1})
-    rm.set_max_need("p3", {"R1": 4, "R2": 1})
+    rm.set_max_need("p3", {"R1": 3, "R2": 2})
+    rm.set_max_need("p4", {"R1": 2, "R2": 1})
     
     print("Demo data loaded successfully.")
 # -------------------------
@@ -181,11 +186,11 @@ def main():
             dm.resolve_deadlock()
 
         elif choice == '12':
-            print("Exiting system. Goodbye!")
-            sys.exit()
+            load_demo_data(pm, rm)
 
         elif choice == '13':
-            load_demo_data(pm, rm)
+            print("Exiting system. Goodbye!")
+            sys.exit()
             
         else:
             print("Invalid option. Please try again.")
