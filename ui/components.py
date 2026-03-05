@@ -44,15 +44,24 @@ def render_process_table(pm):
 
     # Sync back to process_manager
     edited_pids = set()
+    
+    def safe_int(val, default):
+        if pd.isna(val) or val is None:
+            return default
+        try:
+            return int(val)
+        except (ValueError, TypeError):
+            return default
+
     for _, row in edited_df.iterrows():
         pid = str(row.get("PID", "")).strip()
-        if pd.isna(pid) or not pid:
+        if pd.isna(pid) or not pid or pid == "nan" or pid == "None":
             continue
             
         edited_pids.add(pid)
-        burst_time = int(row.get("Burst Time", 1))
-        arrival_time = int(row.get("Arrival Time", 0))
-        priority = int(row.get("Priority", 1))
+        burst_time = safe_int(row.get("Burst Time"), 1)
+        arrival_time = safe_int(row.get("Arrival Time"), 0)
+        priority = safe_int(row.get("Priority"), 1)
         
         p = pm.get_process(pid)
         if p:
