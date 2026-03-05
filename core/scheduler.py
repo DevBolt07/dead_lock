@@ -232,3 +232,133 @@ class Scheduler:
                 completed += 1
                 
         return self.get_schedule_result(processes, execution_order, gantt_data)
+
+    def run_sjf(self):
+        # Non-preemptive Shortest Job First
+        processes = [p for p in self.pm.get_all_processes()]
+        if not processes:
+            return None
+
+        self.reset_metrics(processes)
+        
+        completed = 0
+        n = len(processes)
+        current_time = 0
+        execution_order = []
+        gantt_data = []
+        
+        completed_pids = set()
+        
+        while completed < n:
+            available = [p for p in processes if p.arrival_time <= current_time and p.pid not in completed_pids]
+            
+            if not available:
+                pending = [p for p in processes if p.pid not in completed_pids]
+                if pending:
+                    next_arrival = min(p.arrival_time for p in pending)
+                    gantt_data.append(("IDLE", current_time, next_arrival))
+                    current_time = next_arrival
+                    continue
+                else:
+                    break
+            
+            # Select shortest burst time
+            # If tie, use FCFS (Arrival Time)
+            available.sort(key=lambda x: (x.burst_time, x.arrival_time))
+            p = available[0]
+            
+            p.state = "Running"
+            execution_order.append(p.pid)
+            start_time = current_time
+            
+            current_time += p.burst_time
+            gantt_data.append((p.pid, start_time, current_time))
+            
+            p.completion_time = current_time
+            p.turnaround_time = p.completion_time - p.arrival_time
+            p.waiting_time = p.turnaround_time - p.burst_time
+            p.state = "Terminated"
+            
+            completed_pids.add(p.pid)
+            completed += 1
+            
+        return self.get_schedule_result(processes, execution_order, gantt_data)
+
+    def run_srtf(self):
+        # Preemptive Shortest Remaining Time First
+        processes = [p for p in self.pm.get_all_processes()]
+        if not processes:
+            return None
+
+        self.reset_metrics(processes)
+        
+        completed = 0
+        n = len(processes)
+        current_time = 0
+        execution_order = []
+        gantt_data = []
+        
+        completed_pids = set()
+        current_process = None
+        burst_start_time = 0
+        
+        total_time_needed = sum(p.burst_time for p in processes)
+        
+        # We simulate time unit by unit, or jump to next event (arrival or completion)
+        while completed < n:
+            available = [p for p in processes if p.arrival_time <= current_time and p.pid not in completed_pids]
+            
+            if not available:
+                pending = [p for p in processes if p.pid not in completed_pids]
+                if pending:
+                    next_arrival = min(p.arrival_time for p in pending)
+                    gantt_data.append(("IDLE", current_time, next_arrival))
+                    current_time = next_arrival
+                    continue
+                else:
+                    break
+                    
+            available.sort(key=lambda x: (x.remaining_time, x.arrival_time))
+            shortest = available[0]
+            
+            # Context switch logic
+            if current_process != shortest:
+                if current_process is not None and current_process.remaining_time > 0:
+                    # Preempted
+                    gantt_data.append((current_process.pid, burst_start_time, current_time))
+                    current_process.state = "Ready"
+                
+                # New process takes CPU
+                current_process = shortest
+                burst_start_time = current_time
+                if len(execution_order) == 0 or execution_order[-1] != current_process.pid:
+                    execution_order.append(current_process.pid)
+                current_process.state = "Running"
+                
+            # Execute for 1 time unit (or jump to next event)
+            # Find next event time: either this physical process completes, or a new process arrives
+            time_to_completion = current_process.remaining_time
+            pending_arrivals = [p.arrival_time for p in processes if p.pid not in completed_pids and p.arrival_time > current_time]
+            
+            if pending_arrivals:
+                next_event_time = min(current_time + time_to_completion, min(pending_arrivals))
+            else:
+                next_event_time = current_time + time_to_completion
+                
+            executed_time = next_event_time - current_time
+            current_process.remaining_time -= executed_time
+            current_time = next_event_time
+            
+            if current_process.remaining_time == 0:
+                # Finished
+                gantt_data.append((current_process.pid, burst_start_time, current_time))
+                current_process.state = "Terminated"
+                current_process.completion_time = current_time
+                current_process.turnaround_time = current_process.completion_time - current_process.arrival_time
+                current_process.waiting_time = current_process.turnaround_time - current_process.burst_time
+                
+                completed_pids.add(current_process.pid)
+                completed += 1
+                current_process = None
+                
+        return self.get_schedule_result(processes, execution_order, gantt_data)

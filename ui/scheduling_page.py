@@ -29,7 +29,7 @@ def render_scheduling_page(sim):
         st.subheader("⚙️ Scheduling Controls")
         col1, col2, col3 = st.columns(3)
         with col1:
-            algo = st.selectbox("Select Algorithm", ["FCFS", "Priority Scheduling", "Round Robin"])
+            algo = st.selectbox("Select Algorithm", ["FCFS", "SJF (Non-preemptive)", "SRTF (Preemptive)", "Priority Scheduling", "Round Robin"])
         
         with col2:
             quantum = 2
@@ -39,13 +39,17 @@ def render_scheduling_page(sim):
         with col3:
             st.write("")
             st.write("")
-            run_btn = st.button("▶ Run Scheduler", width="stretch", type="primary")
+            run_btn = st.button("▶ Run Scheduler", width="stretch", type="primary", key="btn_run_cpu")
             
     if run_btn:
         st.divider()
         result = None
         if algo == "FCFS":
             result = sim.scheduler.run_fcfs()
+        elif algo == "SJF (Non-preemptive)":
+            result = sim.scheduler.run_sjf()
+        elif algo == "SRTF (Preemptive)":
+            result = sim.scheduler.run_srtf()
         elif algo == "Priority Scheduling":
             result = sim.scheduler.run_priority()
         elif algo == "Round Robin":

@@ -1,67 +1,82 @@
 # Smart Process & Deadlock Manager
 
-## Project Overview
-This project is a CLI-based simulation of an Operating System's core components: Process Management, CPU Scheduling, Resource Allocation, and Deadlock Management. It is implemented in Python and designed for academic purposes to demonstrate OS concepts without kernel-level complexity.
+A comprehensive, interactive **Operating System Simulator** built in Python.
 
-## Features & Phases
+This project was developed to provide a visual, professional, and mathematically rigorous demonstration of core Operating System concepts taught in computer science curricula. It features a modern web-based dashboard that interactively simulates algorithms rather than relying on abstract console outputs.
 
-### Phase 1: Process Management
-- **PCB Simulation**: processes have PID, State, Burst Time, Priority, Arrival Time.
-- **Process States**: Ready, Running, Waiting, Terminated.
-- **Creation**: Users can create processes dynamically.
+---
 
-### Phase 2: CPU Scheduling
-- **FCFS**: First-Come-First-Serve scheduling based on Arrival Time.
-- **Priority**: Non-preemptive priority scheduling (Lower number = Higher priority).
-- **Round Robin**: Time-quantum based preemptive scheduling.
-- **Metrics**: Calculates Waiting Time and Turnaround Time.
+## 🌟 Key Features
 
-### Phase 3: Resource Management
-- **Resource Types**: Supports multiple resource types (e.g., R1, R2).
-- **Allocation & Request**: Tracks resources using Allocation and Request matrices.
-- **Blocking**: Processes are blocked (Waiting state) if resources are unavailable.
+The simulator is divided into five core educational modules:
 
-### Phase 4: Deadlock Detection
-- **Detection Algorithm**: Implements the standard detection algorithm for multiple resource instances (Available, Allocation, Request).
-- **Reporting**: Identifies and lists deadlocked processes.
+1. **CPU Scheduling**
+   - Real-time Gantt Chart visualization of execution history.
+   - Supports: FCFS, SJF (Non-preemptive), SRTF (Preemptive), Priority Scheduling, Round Robin.
+2. **Deadlock Management**
+   - Tracks Resource configurations against dynamic Max Need / Allocation matrices.
+   - Supports: Deadlock Detection, Banker's Algorithm (Avoidance), and safe Recovery execution.
+3. **Memory Allocation** 
+   - Interactive physical memory partition assignment.
+   - Visualizes internal fragmentation and free space mapping dynamically.
+   - Supports: First Fit, Best Fit, Worst Fit, Next Fit, and the hierarchical **Buddy System**.
+4. **Virtual Memory & Paging**
+   - Simulates Translation Lookaside and Page Fault tracking based on reference strings.
+   - Plots interactive Hit vs. Miss Ratio pie charts.
+   - Supports: FIFO, LRU, Optimal, and Clock (Second Chance).
+5. **Disk Scheduling**
+   - Maps physical disk R/W Head movements across cylinders over time.
+   - Visualizes seeking paths as a 2D line-trace graph.
+   - Supports: FCFS, SSTF, SCAN, C-SCAN.
 
-### Phase 5: Deadlock Avoidance
-- **Banker's Algorithm**: Checks for Safe State before granting resource requests (simulated mode).
-- **Safety Check**: Ensures system never enters an unsafe state if enabled.
+---
 
-### Phase 6: Deadlock Recovery
-- **Recovery Strategy**: Terminates the lowest-priority process involved in a deadlock to break the cycle.
-- **Resource Release**: Automatically releases resources of the terminated process and unblocks waiting processes.
+## 🛠️ Technology Stack
 
-## How to Run
-1. Ensure Python 3.x is installed.
-2. Run the main program:
+- **[Python 3.10+](https://www.python.org/)**: The core backend algorithmic engine.
+- **[Streamlit](https://streamlit.io/)**: The frontend framework driving the interactive web dashboard.
+- **[Plotly](https://plotly.com/python/)**: Powers the dynamic Gantt charts, Scatter traces, and Stacked block visualizers.
+- **[Pandas](https://pandas.pydata.org/)**: Manages state matrix renderings and metrics tables cleanly.
+
+---
+
+## 🚀 How to Run the Simulator
+
+1. **Clone the repository:**
    ```bash
-   python main.py
+   git clone https://github.com/yourusername/os_simulator.git
+   cd os_simulator
    ```
-3. Follow the menu prompts to creating processes, schedule them, or manage resources/deadlocks.
 
-## Demo Mode
-To simplify presentations, the system includes a Demo Mode option (Option 12) in the main menu. 
-- **What it does**: Demo Mode automatically loads four predefined processes, resources, and Banker's algorithm requirements designed to clearly demonstrate scheduling behaviour and deadlock concepts.
-- **Usefulness**: This allows for quick setup and is highly useful for academic presentation or rapid testing without manually typing inputs.
+2. **Install dependencies:**
+   *(Ensure you have `streamlit`, `pandas`, and `plotly` installed via pip)*
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-The dataset supports demonstration of:
-- FCFS
-- Priority Scheduling
-- Round Robin
-- Deadlock scenarios
+3. **Launch the Engine:**
+   ```bash
+   streamlit run app.py
+   ```
+   *The dashboard will instantly open in your default local web browser (typically on `localhost:8501`).*
 
-## OS Concepts Demonstrated
-- **Context Switching**: Simulated by saving/loading process states in Scheduler.
-- **Queuing**: Ready Queue (Scheduler) and Waiting Queue (Resource Manager).
-- **Mutual Exclusion & Hold-and-Wait**: Demonstrated via Resource Manager blocking.
-- **Circular Wait**: Demonstrated in Deadlock Detection.
-- **Starvation**: Can be observed in Priority Scheduling with low-priority processes.
+---
 
-## Possible Extensions
-1. **GUI Visualization**: Implement a graphical interface using Tkinter or PyQt to visualize the Gantt chart and Resource Graph.
-2. **Memory Management**: Add contiguous memory allocation (First-Fit, Best-Fit) simulation.
-3. **File System**: Simulate a simple hierarchical file system with permissions.
-4. **Multi-level Feedback Queue**: Implement a more advanced scheduler with aging to prevent starvation.
-5. **Thread Simulation**: Extend Process to support multiple threads sharing the same PCB resources.
+## 📸 Example Screenshots
+
+*(Insert actual paths to your repository images here before deploying)*
+
+- **CPU Scheduling Dashboard**: `![CPU Scheduler](path/to/cpu_screenshot.png)`
+- **Memory Allocation Visualization**: `![Memory Blocks](path/to/memory_screenshot.png)`
+- **Virtual Memory Simulation**: `![Page Replacement](path/to/vm_screenshot.png)`
+- **Disk Scheduling Graph**: `![Disk Trace](path/to/disk_screenshot.png)`
+
+---
+
+## 📚 Documentation Reference
+
+For deeper insights into how this project is structured and scaled, please refer to the adjoining documentation files:
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture and Python/Streamlit separation of concerns.
+- [ALGORITHMS.md](./ALGORITHMS.md) - Theoretical rules driving the backend models.
+- [UI_GUIDE.md](./UI_GUIDE.md) - Manual on operating the Streamlit dashboard effectively.
+- [TESTING.md](./TESTING.md) - Quick-reference test scenarios for validating the system.
