@@ -81,15 +81,12 @@ class DeadlockManager:
         """
         print(f"\n[Banker's] Checking safety for hypothetical allocation: {pid} requests {amount} of {resource}...")
 
-        # FIX-1: Validate resource names
         if resource not in self.rm.resources:
-            print("Error: Invalid resource type.")
-            return False
+            return {"safe": False, "msg": "Invalid resource type.", "sequence": []}
         
         # 0. Check basic validity (already done in RM but good to double check)
         if self.rm.available.get(resource, 0) < amount:
-            print("Unsafe: Resources not currently available.")
-            return False
+            return {"safe": False, "msg": "Resources not currently available.", "sequence": []}
 
         # 1. Temporarily allocate
         # We need deep copies to simulate without affecting real state
@@ -147,21 +144,20 @@ class DeadlockManager:
                 break
                 
         if all(finish.values()):
-            print(f"Safe State confirmed. Sequence: {safety_sequence}")
-            return True
+            return {"safe": True, "msg": "Safe State confirmed.", "sequence": safety_sequence}
         else:
-            print(f"Unsafe State! Granting request would lead to possible deadlock.")
-            return False
+            return {"safe": False, "msg": "Unsafe State! Granting request would lead to possible deadlock.", "sequence": []}
 
     def resolve_deadlock(self):
         """
         Recover from deadlock by terminating the lowest priority process involved.
         """
+        log = []
         deadlocked = self.detect_deadlock()
         if not deadlocked:
-            return
+            return ["No deadlock detected."]
             
-        print("\n--- Deadlock Recovery ---")
+        log.append("--- Deadlock Recovery ---")
         # Strategy: Terminate Lowest Priority
         # Lower number = Higher priority. So Highest number = Lowest priority.
         
@@ -178,23 +174,20 @@ class DeadlockManager:
                 pass
                 
         if victim:
-            print(f"Selected Victim: Process {victim.pid} (Priority {victim.priority}). Terminating...")
-            # Release resources first? Or just terminate which should release?
-            # We implemented terminate_process in PM, but it just sets state.
-            # We need to release logical resources.
-            # Ideally ResourceManager should trigger release on termination.
-            # But here we orchestrate it.
+            log.append(f"Selected Victim: Process {victim.pid} (Priority {victim.priority}). Terminating...")
             
             self.rm.release_all_resources(victim.pid)
             self.pm.terminate_process(victim.pid)
             
-            print("Victim terminated. Checking system status again...")
+            log.append("Victim terminated. Checking system status again...")
             # Recursive check?
             remaining = self.detect_deadlock()
             if remaining:
-                print("Deadlock still persists. Resolving again...")
-                self.resolve_deadlock()
+                log.append("Deadlock persists. Resolving again...")
+                log.extend(self.resolve_deadlock())
             else:
-                print("Deadlock resolved!")
+                log.append("Deadlock resolved!")
         else:
-            print("Could not identify victim.")
+            log.append("Could not identify victim.")
+            
+        return log

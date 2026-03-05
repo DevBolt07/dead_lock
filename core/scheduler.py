@@ -14,53 +14,49 @@ class Scheduler:
             p.remaining_time = p.burst_time
             p.state = "Ready"
 
-    def print_schedule_result(self, processes, execution_order, gantt_data=None):
-        """Prints the scheduling results: Execution Order, Waiting Time, Turnaround Time."""
-        print("\nExecution Order:")
-        print(" -> ".join(execution_order))
-
-        if gantt_data:
-            print("\nGantt Chart")
-            top_row = "|"
-            for item in gantt_data:
-                pid = item[0]
-                top_row += f" {pid} |"
-            print(top_row)
-            
-            bottom_row = str(gantt_data[0][1])
-            for item in gantt_data:
-                pid, start, end = item
-                width = len(f" {pid} |")
-                bottom_row += str(end).rjust(width)
-            print(bottom_row)
-        
-        print("\nProcess Metrics:")
-        print(f"{'PID':<10} {'Burst':<10} {'Arrival':<10} {'Priority':<10} {'Finish':<10} {'Turnaround':<12} {'Waiting':<10}")
-        print("-" * 75)
-        
+    def get_schedule_result(self, processes, execution_order, gantt_data=None):
         total_tat = 0
         total_wt = 0
-        
-        # Sort by PID for cleaner output, or by finish time? usually by PID is easier to read
-        # But we must ensure 'processes' has the updated values. It should since they are references.
-        
+        metrics = []
+
         for p in sorted(processes, key=lambda x: x.pid):
-            print(f"{p.pid:<10} {p.burst_time:<10} {p.arrival_time:<10} {p.priority:<10} {p.completion_time:<10} {p.turnaround_time:<12} {p.waiting_time:<10}")
+            metrics.append({
+                "PID": p.pid,
+                "Burst": p.burst_time,
+                "Arrival": p.arrival_time,
+                "Priority": p.priority,
+                "Finish": p.completion_time,
+                "Turnaround": p.turnaround_time,
+                "Waiting": p.waiting_time
+            })
             total_tat += p.turnaround_time
             total_wt += p.waiting_time
             
         n = len(processes)
-        if n > 0:
-            print("-" * 75)
-            print(f"Average Turnaround Time: {total_tat / n:.2f}")
-            print(f"Average Waiting Time:    {total_wt / n:.2f}")
+        avg_tat = total_tat / n if n > 0 else 0
+        avg_wt = total_wt / n if n > 0 else 0
+
+        formatted_gantt = []
+        if gantt_data:
+            for item in gantt_data:
+                formatted_gantt.append({
+                    "Process": item[0],
+                    "Start": item[1],
+                    "Finish": item[2]
+                })
+
+        return {
+            "execution_order": execution_order,
+            "gantt": formatted_gantt,
+            "metrics": metrics,
+            "avg_waiting": avg_wt,
+            "avg_turnaround": avg_tat
+        }
 
     def run_fcfs(self):
-        print("\n--- Running FCFS Scheduling ---")
         processes = [p for p in self.pm.get_all_processes()]
         if not processes:
-            print("No processes to schedule.")
-            return
+            return None
 
         self.reset_metrics(processes)
         
@@ -89,15 +85,13 @@ class Scheduler:
             p.waiting_time = p.turnaround_time - p.burst_time
             p.state = "Terminated"
             
-        self.print_schedule_result(processes, execution_order, gantt_data)
+        return self.get_schedule_result(processes, execution_order, gantt_data)
 
     def run_priority(self):
         # Non-preemptive Priority
-        print("\n--- Running Priority Scheduling (Non-Preemptive) ---")
         processes = [p for p in self.pm.get_all_processes()]
         if not processes:
-            print("No processes to schedule.")
-            return
+            return None
 
         self.reset_metrics(processes)
         
@@ -154,14 +148,12 @@ class Scheduler:
             completed_pids.add(p.pid)
             completed += 1
             
-        self.print_schedule_result(processes, execution_order, gantt_data)
+        return self.get_schedule_result(processes, execution_order, gantt_data)
 
     def run_round_robin(self, quantum):
-        print(f"\n--- Running Round Robin Scheduling (Quantum={quantum}) ---")
         processes = [p for p in self.pm.get_all_processes()] # Copy list
         if not processes:
-            print("No processes to schedule.")
-            return
+            return None
 
         self.reset_metrics(processes)
         
@@ -239,4 +231,4 @@ class Scheduler:
                 p.waiting_time = p.turnaround_time - p.burst_time
                 completed += 1
                 
-        self.print_schedule_result(processes, execution_order, gantt_data)
+        return self.get_schedule_result(processes, execution_order, gantt_data)
