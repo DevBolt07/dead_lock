@@ -57,9 +57,7 @@ def render_simulation_ui(algo, quantum):
             ss.reset(algo, quantum)
             st.rerun()
             
-    st.subheader(f"Current Time: {ss.time}")
-    
-    st.markdown("### 🔄 Queue Flow Simulation")
+    st.markdown(f"#### 🔄 Queue Flow Simulation &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp; ⏱️ Current Time: **{ss.time}**")
     col_q1, col_q2, col_q3, col_q4 = st.columns(4)
     
     with col_q1.empty().container():
@@ -96,24 +94,24 @@ def render_simulation_ui(algo, quantum):
         else:
             st.markdown("*None*")
 
-    st.divider()
+    st.write("")
 
     # Live Metrics Table Section
-    st.markdown("### 📊 Live Metrics Table")
+    st.markdown("#### 📊 Live Metrics Table")
     metrics_data = []
     for p in ss.processes:
         # Fetch the dynamically added response_time (fallback seamlessly to -1)
         rt = getattr(p, "response_time", -1)
         metrics_data.append({
-            "PID": p.pid,
-            "Arrival Time": p.arrival_time,
-            "Burst Time": p.burst_time,
-            "Remaining Time": p.remaining_time,
-            "Completion Time": p.completion_time if p.state == "Terminated" else "-",
-            "Turnaround Time": p.turnaround_time if p.state == "Terminated" else "-",
-            "Waiting Time": p.waiting_time if p.state == "Terminated" else "-",
-            "Response Time": rt if rt != -1 else "-",
-            "Status": p.state
+            "PID": str(p.pid),
+            "Arrival Time": str(p.arrival_time),
+            "Burst Time": str(p.burst_time),
+            "Remaining Time": str(p.remaining_time),
+            "Completion Time": str(p.completion_time) if p.state == "Terminated" else "-",
+            "Turnaround Time": str(p.turnaround_time) if p.state == "Terminated" else "-",
+            "Waiting Time": str(p.waiting_time) if p.state == "Terminated" else "-",
+            "Response Time": str(rt) if rt != -1 else "-",
+            "Status": str(p.state)
         })
 
     df_metrics = pd.DataFrame(metrics_data)
@@ -130,27 +128,31 @@ def render_simulation_ui(algo, quantum):
 
         return [color] * len(row)
 
-    st.dataframe(df_metrics.style.apply(highlight_rows, axis=1), use_container_width=True)
+    # Calculate ideal exact height: 35px per row + ~38px header
+    ideal_height = (len(ss.processes) + 1) * 36 + 3
+    st.dataframe(df_metrics.style.apply(highlight_rows, axis=1), use_container_width=True, height=ideal_height, hide_index=True)
 
-    st.divider()
+    st.write("")
     
-    # Event Log Section
-    st.markdown("### 📝 Last Action Log")
-    if ss.event_log:
-        for event in reversed(ss.event_log):
-            st.caption(f"🔹 {event}")
-    else:
-        st.caption("No events yet.")
-        
-    st.divider()
-
-    # Timeline Section
-    st.markdown("### ⏱️ Execution Timeline")
-    if ss.timeline:
-        timeline_str = " | ".join(ss.timeline)
-        st.code(timeline_str, language="text")
-    else:
-        st.code("Simulation not started.", language="text")
+    col_bot1, col_bot2 = st.columns([1, 2.5])
+    
+    with col_bot1:
+        # Event Log Section
+        st.markdown("#### 📝 Last Action Log")
+        if ss.event_log:
+            for event in reversed(ss.event_log):
+                st.caption(f"🔹 {event}")
+        else:
+            st.caption("No events yet.")
+            
+    with col_bot2:
+        # Timeline Section
+        st.markdown("#### ⏱️ Execution Timeline")
+        if ss.timeline:
+            timeline_str = " | ".join(ss.timeline)
+            st.code(timeline_str, language="text")
+        else:
+            st.code("Simulation not started.", language="text")
 
     if st.session_state.get('auto_play', False):
         if not ss.is_finished():
