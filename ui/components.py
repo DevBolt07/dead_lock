@@ -18,14 +18,14 @@ def render_process_table(pm):
     for p in processes:
         data.append({
             "PID": p.pid,
-            "Burst Time": p.burst_time,
             "Arrival Time": p.arrival_time,
+            "Burst Time": p.burst_time,
             "Priority": p.priority
         })
     
     if not data:
         # Create an empty dataframe with the required columns
-        df = pd.DataFrame(columns=["PID", "Burst Time", "Arrival Time", "Priority"])
+        df = pd.DataFrame(columns=["PID", "Arrival Time", "Burst Time", "Priority"])
     else:
         df = pd.DataFrame(data)
     
@@ -35,8 +35,8 @@ def render_process_table(pm):
         width="stretch",
         column_config={
             "PID": st.column_config.TextColumn("PID", disabled=False),
-            "Burst Time": st.column_config.NumberColumn("Burst Time", min_value=1),
             "Arrival Time": st.column_config.NumberColumn("Arrival Time", min_value=0),
+            "Burst Time": st.column_config.NumberColumn("Burst Time", min_value=1),
             "Priority": st.column_config.NumberColumn("Priority", min_value=1)
         },
         key="process_editor"

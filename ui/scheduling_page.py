@@ -26,21 +26,32 @@ def render_simulation_ui(algo, quantum):
     if not ss: return
     
     # Controls
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3, c4, c5 = st.columns(5)
     with c1:
         if st.button("▶ Start Simulation", disabled=ss.is_finished() or st.session_state.get('auto_play', False)):
             st.session_state.auto_play = True
             st.rerun()
     with c2:
-        if st.button("⏸ Pause", disabled=not st.session_state.get('auto_play', False)):
-            st.session_state.auto_play = False
-            st.rerun()
+        is_playing = st.session_state.get('auto_play', False)
+        if is_playing:
+            if st.button("⏸ Pause"):
+                st.session_state.auto_play = False
+                st.rerun()
+        else:
+            if st.button("▶ Resume", disabled=ss.is_finished()):
+                st.session_state.auto_play = True
+                st.rerun()
     with c3:
-        if st.button("⏭ Next Step", disabled=ss.is_finished() or st.session_state.get('auto_play', False)):
+        if st.button("⏪ Previous Step", disabled=len(ss.history) == 0):
+            st.session_state.auto_play = False
+            ss.step_back()
+            st.rerun()
+    with c4:
+        if st.button("⏭ Next Step", disabled=ss.is_finished()):
             st.session_state.auto_play = False
             ss.step()
             st.rerun()
-    with c4:
+    with c5:
         if st.button("🔄 Reset"):
             st.session_state.auto_play = False
             ss.reset(algo, quantum)
@@ -48,30 +59,98 @@ def render_simulation_ui(algo, quantum):
             
     st.subheader(f"Current Time: {ss.time}")
     
-    col_q1, col_q2, col_q3 = st.columns(3)
+    st.markdown("### 🔄 Queue Flow Simulation")
+    col_q1, col_q2, col_q3, col_q4 = st.columns(4)
     
-    with col_q1:
-        st.markdown("### Running Queue")
-        if ss.running_process:
-            st.success(f"**{ss.running_process.pid}** (Rem: {ss.running_process.remaining_time})", icon="🏃")
+    with col_q1.empty().container():
+        st.markdown("#### Job Queue")
+        jobs = list({p.pid: p for p in ss.job_queue}.values())
+        if jobs:
+            for p in jobs:
+                st.info(f"**{p.pid}** (Arr: {p.arrival_time})", icon="📦")
         else:
-            st.info("Idle")
+            st.markdown("*Empty*")
             
-    with col_q2:
-        st.markdown("### Ready Queue")
-        if ss.ready_queue:
-            for p in ss.ready_queue:
+    with col_q2.empty().container():
+        st.markdown("#### Ready Queue")
+        unique_ready = list({p.pid: p for p in ss.ready_queue}.values())
+        if unique_ready:
+            for p in unique_ready:
                 st.warning(f"**{p.pid}** (Rem: {p.remaining_time})", icon="⏳")
         else:
             st.markdown("*Empty*")
             
-    with col_q3:
-        st.markdown("### Completed Processes")
-        if ss.completed_processes:
-            for p in ss.completed_processes:
+    with col_q3.empty().container():
+        st.markdown("#### CPU (Running)")
+        if ss.running_process:
+            st.success(f"**{ss.running_process.pid}** (Rem: {ss.running_process.remaining_time})", icon="⚙️")
+        else:
+            st.error("Idle", icon="💤")
+            
+    with col_q4.empty().container():
+        st.markdown("#### Completed")
+        unique_completed = list({p.pid: p for p in ss.completed_processes}.values())
+        if unique_completed:
+            for p in unique_completed:
                 st.info(f"**{p.pid}** (TAT: {p.turnaround_time}, WT: {p.waiting_time})", icon="✅")
         else:
             st.markdown("*None*")
+
+    st.divider()
+
+    # Live Metrics Table Section
+    st.markdown("### 📊 Live Metrics Table")
+    metrics_data = []
+    for p in ss.processes:
+        # Fetch the dynamically added response_time (fallback seamlessly to -1)
+        rt = getattr(p, "response_time", -1)
+        metrics_data.append({
+            "PID": p.pid,
+            "Arrival Time": p.arrival_time,
+            "Burst Time": p.burst_time,
+            "Remaining Time": p.remaining_time,
+            "Completion Time": p.completion_time if p.state == "Terminated" else "-",
+            "Turnaround Time": p.turnaround_time if p.state == "Terminated" else "-",
+            "Waiting Time": p.waiting_time if p.state == "Terminated" else "-",
+            "Response Time": rt if rt != -1 else "-",
+            "Status": p.state
+        })
+
+    df_metrics = pd.DataFrame(metrics_data)
+
+    def highlight_rows(row):
+        color = ""
+        st_val = row["Status"]
+        if st_val == "Ready":
+            color = "background-color: rgba(243, 156, 18, 0.2)" # Orange hint for arrival/waiting
+        elif st_val == "Running":
+            color = "background-color: rgba(39, 174, 96, 0.3)"  # Green hint for active computing
+        elif st_val == "Terminated":
+            color = "background-color: rgba(52, 152, 219, 0.2)" # Blue hint for strictly completed
+
+        return [color] * len(row)
+
+    st.dataframe(df_metrics.style.apply(highlight_rows, axis=1), use_container_width=True)
+
+    st.divider()
+    
+    # Event Log Section
+    st.markdown("### 📝 Last Action Log")
+    if ss.event_log:
+        for event in reversed(ss.event_log):
+            st.caption(f"🔹 {event}")
+    else:
+        st.caption("No events yet.")
+        
+    st.divider()
+
+    # Timeline Section
+    st.markdown("### ⏱️ Execution Timeline")
+    if ss.timeline:
+        timeline_str = " | ".join(ss.timeline)
+        st.code(timeline_str, language="text")
+    else:
+        st.code("Simulation not started.", language="text")
 
     if st.session_state.get('auto_play', False):
         if not ss.is_finished():
