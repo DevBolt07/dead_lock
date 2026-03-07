@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import time
 from ui.components import render_process_table
 
 def calculate_response_times(result, pm):
@@ -17,6 +18,70 @@ def calculate_response_times(result, pm):
                 response_times[pid] = entry['Start'] - p.arrival_time
     return response_times
 
+def render_simulation_ui(algo, quantum):
+    st.divider()
+    st.header("⏱️ Step-by-Step Simulation View")
+    
+    ss = st.session_state.get("step_scheduler")
+    if not ss: return
+    
+    # Controls
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        if st.button("▶ Start Simulation", disabled=ss.is_finished() or st.session_state.get('auto_play', False)):
+            st.session_state.auto_play = True
+            st.rerun()
+    with c2:
+        if st.button("⏸ Pause", disabled=not st.session_state.get('auto_play', False)):
+            st.session_state.auto_play = False
+            st.rerun()
+    with c3:
+        if st.button("⏭ Next Step", disabled=ss.is_finished() or st.session_state.get('auto_play', False)):
+            st.session_state.auto_play = False
+            ss.step()
+            st.rerun()
+    with c4:
+        if st.button("🔄 Reset"):
+            st.session_state.auto_play = False
+            ss.reset(algo, quantum)
+            st.rerun()
+            
+    st.subheader(f"Current Time: {ss.time}")
+    
+    col_q1, col_q2, col_q3 = st.columns(3)
+    
+    with col_q1:
+        st.markdown("### Running Queue")
+        if ss.running_process:
+            st.success(f"**{ss.running_process.pid}** (Rem: {ss.running_process.remaining_time})", icon="🏃")
+        else:
+            st.info("Idle")
+            
+    with col_q2:
+        st.markdown("### Ready Queue")
+        if ss.ready_queue:
+            for p in ss.ready_queue:
+                st.warning(f"**{p.pid}** (Rem: {p.remaining_time})", icon="⏳")
+        else:
+            st.markdown("*Empty*")
+            
+    with col_q3:
+        st.markdown("### Completed Processes")
+        if ss.completed_processes:
+            for p in ss.completed_processes:
+                st.info(f"**{p.pid}** (TAT: {p.turnaround_time}, WT: {p.waiting_time})", icon="✅")
+        else:
+            st.markdown("*None*")
+
+    if st.session_state.get('auto_play', False):
+        if not ss.is_finished():
+            time.sleep(1.0)
+            ss.step()
+            st.rerun()
+        else:
+            st.session_state.auto_play = False
+            st.success("Simulation Completed!")
+
 def render_scheduling_page(sim):
     st.header("💻 CPU Scheduling Simulator")
     
@@ -27,7 +92,7 @@ def render_scheduling_page(sim):
     
     with st.container():
         st.subheader("⚙️ Scheduling Controls")
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns([1.5, 1, 1, 1])
         with col1:
             algo = st.selectbox("Select Algorithm", ["FCFS", "SJF (Non-preemptive)", "SRTF (Preemptive)", "Priority Scheduling", "Round Robin"])
         
@@ -41,7 +106,24 @@ def render_scheduling_page(sim):
             st.write("")
             run_btn = st.button("▶ Run Scheduler", width="stretch", type="primary", key="btn_run_cpu")
             
+        with col4:
+            st.write("")
+            st.write("")
+            sim_btn = st.button("⏱️ Run Simulation", width="stretch", type="secondary", key="btn_sim_cpu")
+            
+    if sim_btn:
+        st.session_state.scheduler_mode = "simulation"
+        from core.step_scheduler import StepScheduler
+        st.session_state.step_scheduler = StepScheduler(sim.process_manager)
+        st.session_state.step_scheduler.reset(algo, quantum)
+        st.session_state.auto_play = False
+
+    mode = st.session_state.get("scheduler_mode")
+    if mode == "simulation":
+        render_simulation_ui(algo, quantum)
+
     if run_btn:
+        st.session_state.scheduler_mode = "instant"
         st.divider()
         result = None
         if algo == "FCFS":
