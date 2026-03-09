@@ -18,6 +18,36 @@ def calculate_response_times(result, pm):
                 response_times[pid] = entry['Start'] - p.arrival_time
     return response_times
 
+def run_all_and_compare(sim, quantum):
+    results = []
+    
+    res_fcfs = sim.scheduler.run_fcfs()
+    if res_fcfs:
+        res_fcfs['algo'] = "FCFS"
+        results.append(res_fcfs)
+        
+    res_sjf = sim.scheduler.run_sjf()
+    if res_sjf:
+        res_sjf['algo'] = "SJF (Non-preemptive)"
+        results.append(res_sjf)
+        
+    res_srtf = sim.scheduler.run_srtf()
+    if res_srtf:
+        res_srtf['algo'] = "SRTF (Preemptive)"
+        results.append(res_srtf)
+        
+    res_pri = sim.scheduler.run_priority()
+    if res_pri:
+        res_pri['algo'] = "Priority Scheduling"
+        results.append(res_pri)
+        
+    res_rr = sim.scheduler.run_round_robin(quantum)
+    if res_rr:
+        res_rr['algo'] = "Round Robin"
+        results.append(res_rr)
+        
+    return results
+
 def render_simulation_ui(algo, quantum):
     st.divider()
     st.header("⏱️ Step-by-Step Simulation View")
@@ -326,3 +356,60 @@ def render_scheduling_page(sim):
                     st.plotly_chart(fig, width="stretch")
                     
                 st.write("**Execution Order:** ", " ➡️ ".join([str(pid) for pid in result.get('execution_order', [])]))
+
+    st.divider()
+    
+    with st.expander("📊 Algorithm Comparison View", expanded=False):
+        st.subheader("Compare All Algorithms")
+        st.markdown("Runs all 5 CPU scheduling algorithms on the current processes simultaneously for direct performance comparison.")
+        
+        comp_quantum = st.number_input("Time Quantum for Round Robin (Comparison)", min_value=1, value=2, key="comp_quantum_input")
+        
+        if st.button("▶ Run All & Compare", type="primary", key="btn_compare_all"):
+            results = run_all_and_compare(sim, comp_quantum)
+            if not results:
+                st.warning("⚠️ No processes to schedule!")
+            else:
+                st.success("✅ Comparison Complete!")
+                comp_data = []
+                for res in results:
+                    rt_dict = calculate_response_times(res, sim.process_manager)
+                    df_metrics = pd.DataFrame(res['metrics'])
+                    if not df_metrics.empty:
+                        df_metrics["Response Time"] = df_metrics["PID"].map(rt_dict).fillna(0).astype('int')
+                        comp_data.append({
+                            "Algorithm": res['algo'],
+                            "Avg Waiting Time": df_metrics["Waiting"].mean(),
+                            "Avg Turnaround Time": df_metrics["Turnaround"].mean(),
+                            "Avg Response Time": df_metrics["Response Time"].mean()
+                        })
+                    else:
+                        comp_data.append({
+                            "Algorithm": res['algo'],
+                            "Avg Waiting Time": 0,
+                            "Avg Turnaround Time": 0,
+                            "Avg Response Time": 0
+                        })
+                
+                comp_df = pd.DataFrame(comp_data)
+                
+                # Render Unified Comparison Table
+                st.markdown("#### Comparison Table")
+                st.dataframe(comp_df.style.format({
+                    "Avg Waiting Time": "{:.2f}", 
+                    "Avg Turnaround Time": "{:.2f}",
+                    "Avg Response Time": "{:.2f}"
+                }), use_container_width=True)
+                
+                # Plot grouped bar chart
+                st.markdown("#### Performance Chart")
+                comp_melted = comp_df.melt(id_vars=["Algorithm"], var_name="Metric", value_name="Time (Units)")
+                fig_comp = px.bar(
+                    comp_melted, 
+                    x="Algorithm", 
+                    y="Time (Units)", 
+                    color="Metric", 
+                    barmode="group",
+                    title="Algorithm Metrics Comparison"
+                )
+                st.plotly_chart(fig_comp, use_container_width=True)

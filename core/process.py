@@ -34,12 +34,10 @@ class ProcessManager:
     def create_process(self, pid, burst_time, priority, arrival_time):
         """Creates a new process and adds it to the list."""
         if any(p.pid == pid for p in self.processes):
-            print(f"Error: Process with PID {pid} already exists.")
             return False
             
         new_process = Process(pid, burst_time, priority, arrival_time)
         self.processes.append(new_process)
-        print(f"Process {pid} created successfully.")
         return True
 
     def get_process(self, pid):
@@ -58,19 +56,5 @@ class ProcessManager:
         p = self.get_process(pid)
         if p:
             p.state = "Terminated"
-            print(f"Process {pid} terminated.")
             return True
         return False
-
-    def display_process_table(self):
-        """Displays the current state of all processes in a table format."""
-        if not self.processes:
-            print("No processes exist.")
-            return
-
-        print("\n" + "="*80)
-        print(f"{'PID':<10} {'Burst':<10} {'Priority':<10} {'Arrival':<10} {'State':<15} {'Remaining':<10}")
-        print("-" * 80)
-        for p in self.processes:
-            print(f"{p.pid:<10} {p.burst_time:<10} {p.priority:<10} {p.arrival_time:<10} {p.state:<15} {p.remaining_time:<10}")
-        print("="*80 + "\n")

@@ -13,7 +13,6 @@ class DeadlockManager:
         """
         processes = [p for p in self.pm.get_all_processes() if p.state != "Terminated"]
         if not processes:
-            print("No active processes to check.")
             return []
 
         # 1. Initialize Work and Finish
@@ -32,7 +31,6 @@ class DeadlockManager:
         # But let's stick to the algo:
         # Find i such that Finish[i] == False and Request[i] <= Work
         
-        print("\n--- Running Deadlock Detection ---")
         
         while True:
             progress_made = False
@@ -67,11 +65,6 @@ class DeadlockManager:
                 
         deadlocked_pids = [pid for pid, done in finish.items() if not done]
         
-        if deadlocked_pids:
-            print(f"Deadlock DETECTED! Processes involved: {deadlocked_pids}")
-        else:
-            print("System is SAFE. No deadlock detected.")
-            
         return deadlocked_pids
 
     def check_safety_for_request(self, pid, resource, amount):
@@ -79,7 +72,6 @@ class DeadlockManager:
         Simulate the request and check if the resulting state is Safe (Banker's Algorithm).
         Returns True if Safe, False otherwise.
         """
-        print(f"\n[Banker's] Checking safety for hypothetical allocation: {pid} requests {amount} of {resource}...")
 
         if resource not in self.rm.resources:
             return {"safe": False, "msg": "Invalid resource type.", "sequence": []}

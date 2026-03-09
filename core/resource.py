@@ -18,7 +18,6 @@ class ResourceManager:
         self.available = resource_dict.copy()
         self.allocation = {}
         self.request = {}
-        print("Resources initialized:", self.available)
 
     def get_process_allocation(self, pid):
         if pid not in self.allocation:
@@ -31,15 +30,12 @@ class ResourceManager:
         """
         process = self.pm.get_process(pid)
         if not process:
-            print(f"Error: Process {pid} not found.")
             return False
 
         if resource_type not in self.resources:
-            print("Error: Invalid resource type.")
             return False
 
         if amount <= 0:
-            print("Error: Request amount must be positive.")
             return False
 
         current_alloc = self.get_process_allocation(pid)
@@ -49,13 +45,11 @@ class ResourceManager:
             current_val = current_alloc.get(resource_type, 0)
             max_val = process.max_need.get(resource_type, 0)
             if max_val > 0 and (current_val + amount) > max_val:
-                print("Error: Request exceeds maximum declared need.")
                 return False
         
         # Check if request is valid (conceptually, valid if it doesn't exceed max need, 
         # but we don't have Max Need enforced yet in Phase 3, just basic allocation)
         
-        print(f"Process {pid} requesting {amount} instances of {resource_type}...")
 
         if self.available[resource_type] >= amount:
             # Grant immediately
@@ -67,11 +61,9 @@ class ResourceManager:
                 process.allocation[resource_type] = 0
             process.allocation[resource_type] += amount
             
-            print(f"Request granted. {pid} allocated {amount} of {resource_type}.")
             return True
         else:
             # Block the process
-            print(f"Resources not available. Process {pid} blocked (Waiting).")
             process.state = "Waiting"
             
             if pid not in self.request:
@@ -91,15 +83,12 @@ class ResourceManager:
         """
         process = self.pm.get_process(pid)
         if not process:
-            print(f"Error: Process {pid} not found.")
             return False
 
         if resource_type not in self.resources:
-            print("Error: Invalid resource type.")
             return False
 
         if pid not in self.allocation or self.allocation[pid][resource_type] < amount:
-            print(f"Error: Process {pid} does not hold {amount} instances of {resource_type}.")
             return False
 
         # Release
@@ -109,8 +98,6 @@ class ResourceManager:
         # Update process internal
         process.allocation[resource_type] -= amount
         
-        print(f"Process {pid} released {amount} of {resource_type}.")
-        print(f"Available resources: {self.available}")
         
         # Check if any waiting process can be unblocked
         self.check_waiting_processes()
@@ -141,7 +128,6 @@ class ResourceManager:
             
             if can_satisfy:
                 # Grant all requests
-                print(f"Resources became available for {pid}. Allocating...")
                 for r, amt in reqs.items():
                     if amt > 0:
                         self.available[r] -= amt
@@ -154,7 +140,6 @@ class ResourceManager:
                 process.state = "Ready" 
                 # Why Ready? Because it has resources now and can be scheduled.
                 # Or Running? Usually Ready.
-                print(f"Process {pid} is now Ready.")
                 
                 # Cleanup request entry if empty
                 # self.request[pid] should be cleared? 
@@ -164,20 +149,16 @@ class ResourceManager:
         """Sets the maximum resource need for a process (used for Banker's Algorithm)."""
         process = self.pm.get_process(pid)
         if not process:
-            print(f"Error: Process {pid} not found.")
             return False
             
         # Validate keys
         for r, amt in max_need.items():
             if r not in self.resources:
-                print(f"Error: Resource {r} does not exist.")
                 return False
             if amt > self.resources[r]:
-                print(f"Error: Max need {amt} exceeds total system capacity for {r}.")
                 return False
 
         process.max_need = max_need
-        print(f"Max need set for Process {pid}: {max_need}")
         return True
 
     def release_all_resources(self, pid):
@@ -186,7 +167,6 @@ class ResourceManager:
         if not process:
             return False
             
-        print(f"Releasing all resources for {pid}...")
         # Make a copy of keys as we modify allocation in loop
         allocated_resources = list(process.allocation.items())
         
@@ -204,25 +184,3 @@ class ResourceManager:
 
         return True
 
-    def display_resource_status(self):
-        print("\n--- Resource Status ---")
-        print(f"Available: {self.available}")
-        print("\nAllocation Matrix:")
-        print(f"{'PID':<10} " + " ".join([f"{r:<5}" for r in self.resources]))
-        for pid, alloc in self.allocation.items():
-            print(f"{pid:<10} " + " ".join([f"{alloc.get(r,0):<5}" for r in self.resources]))
-            
-        print("\nMax Need Matrix (Banker's):")
-        print(f"{'PID':<10} " + " ".join([f"{r:<5}" for r in self.resources]))
-        for p in self.pm.get_all_processes():
-            if p.state != "Terminated":
-                print(f"{p.pid:<10} " + " ".join([f"{p.max_need.get(r,0):<5}" for r in self.resources]))
-        
-        print("\nRequest Matrix:")
-        print(f"{'PID':<10} " + " ".join([f"{r:<5}" for r in self.resources]))
-        for pid, req in self.request.items():
-            # Only show if there are actual requests?
-            has_req = any(v > 0 for v in req.values())
-            if has_req:
-                print(f"{pid:<10} " + " ".join([f"{req.get(r,0):<5}" for r in self.resources]))
-        print("-----------------------")
